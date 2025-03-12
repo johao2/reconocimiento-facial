@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reconocimiento Facial UTLVTE</title>
+    <!-- Cargar Face-API.js desde una versión estable en unpkg -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.2/dist/face-api.js"></script>
+    <!-- Cargar Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #007934; /* Verde UTLVTE */
+            --secondary-color: #E30613; /* Rojo UTLVTE */
+            --accent-color: #4dc6e7;
+            --text-color: #333;
+            --light-bg: #f5f7fa;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 20px;
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .logo-container {
+            text-align: center;
+        }
+        
+        .logo {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            margin-bottom: 10px;
+        }
+        
+        .title-container {
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .campus-name {
+            font-style: italic;
+            color: #fff;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .logo {
+                width: 80px;
+                height: 80px;
+            }
+        }
+        
+        .app-description {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .camera-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        #video {
+            width: 100%;
+            max-width: 640px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background-color: #ddd;
+            margin-bottom: 20px;
+        }
+        
+        #canvas {
+            display: none;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 1rem;
+        }
+        
+        button:hover {
+            background-color: #C00513;
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .result-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .emotion-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .emotion-item {
+            background-color: var(--light-bg);
+            padding: 10px;
+            border-radius: 5px;
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+        }
+        
+        .emotion-value {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+        
+        .primary-emotion {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .user-name {
+            margin-top: 15px;
+            font-size: 1.2rem;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px 0;
+            color: #666;
+            font-size: 0.9rem;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--secondary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .emotion-chart-container {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            height: 300px;
+        }
+        
+        .name-input {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+        
+        .name-input input {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            font-size: 1rem;
+            margin-top: 5px;
+        }
+        
+        .error-message {
+            color: var(--secondary-color);
+            margin-top: 10px;
+        }
+
+        #status-message {
+            text-align: center;
+            margin: 10px 0;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-container">
+                    <img src="images.png" alt="Logo UTLVTE" class="logo">
+                </div>
+                <div class="title-container">
+                    <h1>Reconocimiento Facial con IA</h1>
+                    <p>Universidad Técnica Luis Vargas Torres</p>
+                    <p class="campus-name">Sede Santo Domingo de los Tsáchilas</p>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="app-description">
+            <h2>¿Qué hace esta aplicación?</h2>
+            <p>Esta aplicación desarrollada por la UTLVTE utiliza inteligencia artificial para detectar rostros a través de la cámara web, analizar las emociones presentes y asociarlas con el nombre que ingreses. Puede reconocer felicidad, tristeza, enojo, sorpresa, miedo, disgusto y expresiones neutras.</p>
+        </div>
+        
+        <div id="status-message">Cargando modelos... Por favor espera.</div>
+        
+        <div class="name-input">
+            <label for="user-name">Ingresa tu nombre:</label>
+            <input type="text" id="user-name" placeholder="Escribe tu nombre aquí">
+        </div>
+        
+        <div class="camera-container">
+            <video id="video" autoplay muted></video>
+            <canvas id="canvas"></canvas>
+            
+            <div class="controls">
+                <button id="start-button" disabled>Iniciar Cámara</button>
+                <button id="detect-button" disabled>Detectar Emociones</button>
+                <button id="stop-button" disabled>Detener Cámara</button>
+            </div>
+            
+            <div class="loader" id="loader"></div>
+            <p class="error-message" id="error-message"></p>
+        </div>
+        
+        <div class="result-container hidden" id="result-container">
+            <h2>Resultados del Análisis</h2>
+            
+            <div class="user-name" id="result-name"></div>
+            
+            <h3>Emociones Detectadas:</h3>
+            <div class="emotion-box" id="emotion-box"></div>
+            
+            <div class="emotion-chart-container">
+                <canvas id="emotion-chart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <div class="container">
+            <p>© 2025 Sistema de Reconocimiento Facial UTLVTE | Universidad Técnica Luis Vargas Torres</p>
+        </div>
+    </footer>
+
+    <script>
+        // Variables para elementos del DOM
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const startButton = document.getElementById('start-button');
+        const detectButton = document.getElementById('detect-button');
+        const stopButton = document.getElementById('stop-button');
+        const loader = document.getElementById('loader');
+        const errorMessage = document.getElementById('error-message');
+        const resultContainer = document.getElementById('result-container');
+        const emotionBox = document.getElementById('emotion-box');
+        const resultName = document.getElementById('result-name');
+        const userNameInput = document.getElementById('user-name');
+        const statusMessage = document.getElementById('status-message');
+        
+        // Variables de estado
+        let stream = null;
+        let isModelLoaded = false;
+        let emotionChart = null;
+        
+        // Mapa de traducciones de emociones
+        const emotionTranslations = {
+            'happy': 'Feliz',
+            'sad': 'Triste',
+            'angry': 'Enojado',
+            'surprised': 'Sorprendido',
+            'fearful': 'Asustado',
+            'disgusted': 'Disgustado',
+            'neutral': 'Neutral'
+        };
+        
+        // Esperar a que Face-API.js se cargue
+        document.addEventListener('DOMContentLoaded', () => {
+            loader.style.display = 'block';
+            
+            // Comprobar si face-api está disponible cada 100ms
+            const checkInterval = setInterval(() => {
+                if (window.faceapi) {
+                    clearInterval(checkInterval);
+                    console.log("Face-API.js cargado correctamente");
+                    loadModels();
+                }
+            }, 100);
+            
+            // Timeout después de 10 segundos
+            setTimeout(() => {
+                if (!window.faceapi) {
+                    clearInterval(checkInterval);
+                    errorMessage.textContent = 'Error al cargar Face-API.js. Por favor, recarga la página o prueba con otro navegador.';
+                    statusMessage.textContent = 'Error al cargar la biblioteca. Verifica tu conexión a internet.';
+                    loader.style.display = 'none';
+                    console.error("Face-API.js no se cargó correctamente después de esperar");
+                }
+            }, 10000);
+        });
+        
+        // Cargar modelos de IA
+        async function loadModels() {
+            try {
+                loader.style.display = 'block';
+                statusMessage.textContent = 'Cargando modelos de IA. Esto puede tomar unos momentos...';
+                errorMessage.textContent = '';
+                
+                // Intentar cargar modelos desde CDN
+                try {
+                    await faceapi.loadTinyFaceDetectorModel('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model');
+                    await faceapi.loadFaceLandmarkModel('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model');
+                    await faceapi.loadFaceRecognitionModel('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model');
+                    await faceapi.loadFaceExpressionModel('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model');
+                } catch (cdnError) {
+                    console.warn('Error al cargar desde CDN, intentando carga alternativa', cdnError);
+                    // Fallback a otra fuente
+                    await faceapi.loadTinyFaceDetectorModel('https://justadudewhohacks.github.io/face-api.js/models');
+                    await faceapi.loadFaceLandmarkModel('https://justadudewhohacks.github.io/face-api.js/models');
+                    await faceapi.loadFaceRecognitionModel('https://justadudewhohacks.github.io/face-api.js/models');
+                    await faceapi.loadFaceExpressionModel('https://justadudewhohacks.github.io/face-api.js/models');
+                }
+                
+                isModelLoaded = true;
+                startButton.disabled = false;
+                statusMessage.textContent = 'Modelos cargados correctamente. Ya puedes iniciar la cámara.';
+                loader.style.display = 'none';
+                console.log('Modelos cargados correctamente');
+            } catch (error) {
+                console.error('Error al cargar los modelos:', error);
+                errorMessage.textContent = 'Error al cargar los modelos de IA: ' + error.message;
+                statusMessage.textContent = 'No se pudieron cargar los modelos de IA.';
+                loader.style.display = 'none';
+            }
+        }
+        
+        // Iniciar la cámara
+        async function startCamera() {
+            try {
+                statusMessage.textContent = 'Solicitando acceso a la cámara...';
+                errorMessage.textContent = '';
+                
+                // Obtener acceso a la cámara
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    }
+                });
+                
+                // Mostrar la transmisión de la cámara en el elemento de video
+                video.srcObject = stream;
+                
+                // Habilitar/deshabilitar botones
+                startButton.disabled = true;
+                detectButton.disabled = false;
+                stopButton.disabled = false;
+                
+                statusMessage.textContent = 'Cámara iniciada. Ahora puedes detectar emociones.';
+                
+            } catch (error) {
+                console.error('Error al acceder a la cámara:', error);
+                errorMessage.textContent = 'No se pudo acceder a la cámara. Verifica que has dado los permisos necesarios.';
+                statusMessage.textContent = 'Error al acceder a la cámara.';
+            }
+        }
+        
+        // Detener la cámara
+        function stopCamera() {
+            if (stream) {
+                const tracks = stream.getTracks();
+                tracks.forEach(track => track.stop());
+                video.srcObject = null;
+                
+                // Restablecer los botones
+                startButton.disabled = false;
+                detectButton.disabled = true;
+                stopButton.disabled = true;
+                
+                statusMessage.textContent = 'Cámara detenida.';
+            }
+        }
+        
+        // Detectar emociones en el rostro
+        async function detectEmotions() {
+            if (!stream) {
+                errorMessage.textContent = 'Por favor, inicia la cámara primero.';
+                return;
+            }
+            
+            // Verificar si el usuario ha ingresado un nombre
+            const userName = userNameInput.value.trim();
+            if (userName === '') {
+                errorMessage.textContent = 'Por favor, ingresa un nombre antes de continuar.';
+                return;
+            }
+            
+            errorMessage.textContent = '';
+            loader.style.display = 'block';
+            resultContainer.classList.add('hidden');
+            statusMessage.textContent = 'Analizando emociones...';
+            
+            try {
+                // Configurar el lienzo para capturar la imagen actual
+                const displaySize = { width: video.videoWidth, height: video.videoHeight };
+                canvas.width = displaySize.width;
+                canvas.height = displaySize.height;
+                faceapi.matchDimensions(canvas, displaySize);
+                
+                // Detectar rostro y expresiones
+                const detection = await faceapi.detectSingleFace(
+                    video, 
+                    new faceapi.TinyFaceDetectorOptions()
+                ).withFaceLandmarks().withFaceExpressions();
+                
+                if (detection) {
+                    // Procesar y mostrar resultados
+                    const resizedDetection = faceapi.resizeResults(detection, displaySize);
+                    
+                    // Dibujar el resultado en el canvas
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    // Mostrar el nombre del usuario
+                    resultName.textContent = `Nombre: ${userName}`;
+                    
+                    // Mostrar emociones detectadas
+                    displayEmotions(detection.expressions);
+                    
+                    // Mostrar contenedor de resultados
+                    resultContainer.classList.remove('hidden');
+                    statusMessage.textContent = 'Análisis completado correctamente.';
+                } else {
+                    errorMessage.textContent = 'No se detectó ningún rostro. Por favor, asegúrate de estar frente a la cámara.';
+                    statusMessage.textContent = 'No se detectó ningún rostro.';
+                }
+                
+            } catch (error) {
+                console.error('Error al detectar emociones:', error);
+                errorMessage.textContent = 'Error al procesar el análisis facial: ' + error.message;
+                statusMessage.textContent = 'Error durante el análisis.';
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+        
+        // Mostrar emociones detectadas
+        function displayEmotions(expressions) {
+            // Limpiar el contenedor de emociones
+            emotionBox.innerHTML = '';
+            
+            // Convertir el objeto de expresiones en un array para ordenarlo
+            const emotionsArray = Object.entries(expressions).map(([emotion, value]) => {
+                return {
+                    emotion,
+                    value,
+                    label: emotionTranslations[emotion] || emotion
+                };
+            });
+            
+            // Ordenar las emociones por valor (de mayor a menor)
+            emotionsArray.sort((a, b) => b.value - a.value);
+            
+            // Encontrar la emoción predominante
+            const primaryEmotion = emotionsArray[0];
+            
+            // Crear elementos para cada emoción
+            emotionsArray.forEach((item, index) => {
+                const emotionItem = document.createElement('div');
+                emotionItem.className = 'emotion-item';
+                
+                // Añadir clase especial a la emoción principal
+                if (index === 0) {
+                    emotionItem.classList.add('primary-emotion');
+                }
+                
+                // Formatear el valor como porcentaje
+                const percentage = (item.value * 100).toFixed(1);
+                
+                emotionItem.innerHTML = `
+                    <div>${item.label}</div>
+                    <div class="emotion-value">${percentage}%</div>
+                `;
+                
+                emotionBox.appendChild(emotionItem);
+            });
+            
+            // Crear o actualizar el gráfico
+            createEmotionChart(emotionsArray);
+        }
+        
+        // Crear un gráfico de barras para las emociones
+        function createEmotionChart(emotionsArray) {
+            const ctx = document.getElementById('emotion-chart').getContext('2d');
+            
+            // Destruir el gráfico anterior si existe
+            if (emotionChart) {
+                emotionChart.destroy();
+            }
+            
+            // Preparar datos para el gráfico
+            const labels = emotionsArray.map(item => item.label);
+            const data = emotionsArray.map(item => item.value * 100);
+            
+            // Colores de UTLVTE
+            const utlvteColors = [
+                '#007934', '#E30613', '#00592A', '#B80510', 
+                '#004E23', '#8E040C', '#002C14', '#650309'
+            ];
+            
+            // Crear nuevo gráfico
+            emotionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Porcentaje de emoción',
+                        data: data,
+                        backgroundColor: utlvteColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Porcentaje (%)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Distribución de Emociones Detectadas'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Event Listeners
+        startButton.addEventListener('click', startCamera);
+        detectButton.addEventListener('click', detectEmotions);
+        stopButton.addEventListener('click', stopCamera);
+        
+        // Limpiar recursos cuando se cierra la página
+        window.addEventListener('beforeunload', () => {
+            if (stream) {
+                stopCamera();
+            }
+        });
+    </script>
+</body>
+</html>
